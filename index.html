@@ -1,175 +1,195 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>10 Reasons Why I Love You ❤️</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #ffcce5;
-      touch-action: none; /* disable browser pinch zoom on phones */
-    }
-    canvas { display: block; }
-    #overlay {
-      position: fixed;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: #fff;
-      font-family: 'Arial Rounded MT Bold', sans-serif;
-      font-size: 18px;
-      text-shadow: 0 0 8px rgba(255,0,100,0.8);
-      user-select: none;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>10 Reasons Why I Love You ❤️</title>
+<style>
+html, body {
+  margin:0;
+  padding:0;
+  height:100%;
+  width:100%;
+  overflow:hidden;
+  touch-action:none;
+  background: linear-gradient(135deg, #ffcce5, #ff99cc, #cc66ff);
+  font-family:'Arial Rounded MT Bold', sans-serif;
+}
+#reason {
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(1);
+  color:#fff;
+  font-size:2rem;
+  text-align:center;
+  opacity:1;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  text-shadow: 0 0 15px #fff, 0 0 30px #ff66b2, 0 0 45px #cc66ff;
+  pointer-events:none;
+  z-index: 2;
+}
+canvas { 
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  z-index:1;
+}
+</style>
 </head>
 <body>
-  <div id="overlay">Scroll (or pinch on phone) to see the next reason ❤️</div>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/loaders/FontLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/geometries/TextGeometry.js"></script>
-  <script>
-    // ---- Setup ----
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.z = 5;
 
-    const renderer = new THREE.WebGLRenderer({antialias:true});
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+<div id="reason">You make me laugh every day</div>
+<canvas id="hearts"></canvas>
 
-    // ---- Floating hearts background ----
-    const heartCount = 80;
-    const hearts = [];
-    const heartGeometry = new THREE.CircleGeometry(0.05, 32);
-    const heartMaterial = new THREE.MeshBasicMaterial({ color: 0xff3366, transparent: true, opacity: 0.7 });
+<script>
+// ----------------------- Reasons ------------------------
+const reasons = [
+  "You make me laugh every day",
+  "You believe in me always",
+  "Your smile brightens my world",
+  "You’re my safe place",
+  "You inspire me to be better",
+  "We have the best adventures",
+  "You love me for who I am",
+  "You’re my best friend",
+  "You’re beautiful inside and out",
+  "You’re my everything ❤️"
+];
 
-    for (let i=0; i<heartCount; i++) {
-      const heart = new THREE.Mesh(heartGeometry, heartMaterial.clone());
-      heart.position.set(
-        (Math.random() - 0.5) * 12,
-        (Math.random() - 0.5) * 8,
-        -Math.random() * 5
-      );
-      heart.material.opacity = Math.random()*0.8+0.2;
-      scene.add(heart);
-      hearts.push(heart);
+let current = 0;
+const reasonDiv = document.getElementById('reason');
+
+// ------------------- Glitter Particle -------------------
+class GlitterParticle {
+  constructor(x,y){
+    this.x=x;
+    this.y=y;
+    const angle = Math.random()*2*Math.PI;
+    const speed = Math.random()*5 + 2;
+    this.vx = Math.cos(angle)*speed;
+    this.vy = Math.sin(angle)*speed;
+    this.size = Math.random()*4+2;
+    this.alpha = 1;
+    // pink and purple colors
+    this.color = Math.random()<0.5 ? 
+      `hsl(${Math.random()*20+330},80%,80%)` : // pink
+      `hsl(${Math.random()*30+260},80%,80%)`;  // purple
+  }
+  update(){
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy += 0.05; // gravity
+    this.alpha -= 0.02;
+  }
+}
+
+let glitterParticles = [];
+
+// ------------------ Show reason with animation -----------------
+function showReason(index){
+  reasonDiv.style.opacity=0;
+  reasonDiv.style.transform='translate(-50%,-50%) scale(0.8)';
+  setTimeout(()=>{
+    reasonDiv.textContent = reasons[index];
+    reasonDiv.style.opacity=1;
+    reasonDiv.style.transform='translate(-50%,-50%) scale(1)';
+    // create glitter explosion
+    for(let i=0;i<50;i++){
+      glitterParticles.push(new GlitterParticle(window.innerWidth/2, window.innerHeight/2));
     }
+  },300);
+}
 
-    // ---- Reasons ----
-    const reasons = [
-      "You make me laugh every day",
-      "You believe in me always",
-      "Your smile brightens my world",
-      "You’re my safe place",
-      "You inspire me to be better",
-      "We have the best adventures",
-      "You love me for who I am",
-      "You’re my best friend",
-      "You’re beautiful inside and out",
-      "You’re my everything ❤️"
-    ];
+// ------------------ Scroll / Trackpad -----------------
+let scrollDelta=0;
+const threshold=30;
+window.addEventListener("wheel", e=>{
+  scrollDelta += e.deltaY;
+  if(scrollDelta>threshold){
+    current = (current+1)%reasons.length;
+    showReason(current);
+    scrollDelta=0;
+  } else if(scrollDelta<-threshold){
+    current = (current-1+reasons.length)%reasons.length;
+    showReason(current);
+    scrollDelta=0;
+  }
+},{passive:true});
 
-    let currentIndex = 0;
-    let texts = [];
+// ------------------ Pinch Mobile -----------------
+let startDist=null;
+window.addEventListener("touchmove", e=>{
+  if(e.touches.length===2){
+    let dx = e.touches[0].pageX - e.touches[1].pageX;
+    let dy = e.touches[0].pageY - e.touches[1].pageY;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    if(startDist !== null){
+      if(dist-startDist>20){ current=(current+1)%reasons.length; showReason(current); startDist=dist;}
+      else if(startDist-dist>20){ current=(current-1+reasons.length)%reasons.length; showReason(current); startDist=dist;}
+    } else startDist=dist;
+  }
+},{passive:true});
+window.addEventListener("touchend", ()=>{ startDist=null; });
 
-    const loader = new THREE.FontLoader();
-    loader.load("https://threejs.org/examples/fonts/helvetiker_regular.typeface.json", function(font){
-      reasons.forEach((reason, i) => {
-        const geometry = new THREE.TextGeometry(reason, {
-          font: font,
-          size: 0.35,
-          height: 0.05,
-        });
-        geometry.center();
-        const material = new THREE.MeshBasicMaterial({ 
-          color: 0xffffff, 
-          transparent: true, 
-          opacity: i===0 ? 1 : 0 
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
-        texts.push(mesh);
-      });
-    });
+// ------------------ Canvas Setup -----------------
+const canvas = document.getElementById('hearts');
+const ctx = canvas.getContext('2d');
 
-    // ---- Transition ----
-    function showReason(newIndex) {
-      if (newIndex === currentIndex || !texts.length) return;
-      const fromMesh = texts[currentIndex];
-      const toMesh = texts[newIndex];
-      let progress = 0;
-      function animateFade(){
-        progress += 0.03;
-        if(fromMesh) fromMesh.material.opacity = 1 - progress;
-        if(toMesh) toMesh.material.opacity = progress;
-        if(progress < 1) requestAnimationFrame(animateFade);
-      }
-      animateFade();
-      currentIndex = newIndex;
-    }
+function resizeCanvas(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
 
-    function nextReason() {
-      const next = (currentIndex + 1) % reasons.length;
-      showReason(next);
-    }
-    function prevReason() {
-      const prev = (currentIndex - 1 + reasons.length) % reasons.length;
-      showReason(prev);
-    }
+// ------------------ Floating Hearts -----------------
+const heartCount = 60;
+const hearts = [];
+for(let i=0;i<heartCount;i++){
+  hearts.push({
+    x: Math.random()*canvas.width,
+    y: Math.random()*canvas.height,
+    size: Math.random()*6+4,
+    speed: Math.random()*1+0.5,
+    color: Math.random()<0.5 ? `hsl(${Math.random()*20+330},80%,80%)` : `hsl(${Math.random()*30+260},80%,80%)`,
+    sparkle: Math.random()*0.7+0.3
+  });
+}
 
-    // ---- Scroll (desktop / MacBook trackpad) ----
-    let scrollCooldown = false;
-    document.addEventListener("wheel", (e)=>{
-      if(scrollCooldown) return;
-      if (e.deltaY < 0) nextReason();
-      else prevReason();
-      scrollCooldown = true;
-      setTimeout(()=>scrollCooldown=false, 500); // debounce
-    }, {passive:true});
+// ------------------ Animate -----------------
+function animate(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // ---- Pinch (mobile) ----
-    let startDist = null;
-    document.addEventListener("touchmove", (e)=>{
-      if(e.touches.length === 2){
-        let dx = e.touches[0].pageX - e.touches[1].pageX;
-        let dy = e.touches[0].pageY - e.touches[1].pageY;
-        let dist = Math.sqrt(dx*dx + dy*dy);
-        if(startDist !== null){
-          if(dist - startDist > 20) { // pinch out
-            nextReason();
-            startDist = dist;
-          } else if(startDist - dist > 20) { // pinch in
-            prevReason();
-            startDist = dist;
-          }
-        } else {
-          startDist = dist;
-        }
-      }
-    }, {passive:true});
-    document.addEventListener("touchend", ()=>{ startDist = null; });
+  // hearts
+  hearts.forEach(h=>{
+    ctx.fillStyle = h.color;
+    ctx.globalAlpha = h.sparkle + Math.sin(Date.now()/200 + h.x + h.y)*0.3;
+    ctx.beginPath();
+    ctx.arc(h.x,h.y,h.size,0,Math.PI*2);
+    ctx.fill();
+    h.y -= h.speed;
+    if(h.y<-10) h.y = canvas.height + 10;
+  });
 
-    // ---- Animate ----
-    function animate(){
-      requestAnimationFrame(animate);
+  // glitter particles (iterate backwards)
+  for(let i=glitterParticles.length-1;i>=0;i--){
+    const p = glitterParticles[i];
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fill();
+    p.update();
+    if(p.alpha <= 0) glitterParticles.splice(i,1);
+  }
 
-      // Move floating hearts
-      hearts.forEach(h=>{
-        h.position.y += 0.01;
-        if(h.position.y > 4) h.position.y = -4;
-      });
+  ctx.globalAlpha=1;
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
 
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    window.addEventListener("resize", ()=>{
-      camera.aspect = window.innerWidth/window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
 </body>
 </html>
